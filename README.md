@@ -1,6 +1,6 @@
 # illumina-preprocess-assembly:
 
-preprocessing and assembly workflows for nanopore data
+preprocessing and assembly workflows for Illumina MiSeq data
 
 ## IlluminaPreprocessAssembly.wdl
 The IlluminaPreprocessAssembly.wdl workflow was developed for the preprocessing and assembly of Illumina MiSeq sequencing of SARS-CoV-2 to be run on the GCP Terra platform. It takes paired-end fastq files as input.
