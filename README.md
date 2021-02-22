@@ -14,12 +14,12 @@ The columns for the input data table in Terra should be arranged as:
 Also needed as input (these should be saved as Workspace data and included in Terra input field for the workflow): 
 1. covid_genome - the path to the google bucket directory containing the SARS-CoV-2 reference genome fasta
 2. covid_annotation - the path to the google bucket directory containing the SARS-CoV-2 reference genome gff annotation file
-3. adaptier_and_contaminants - the path to the google bucket directory containing a fasta file of adapter sequences as potential contaminants (e.g. PhiX)
+3. adapter_and_contaminants - the path to the google bucket directory containing a fasta file of adapter sequences as potential contaminants (e.g. PhiX)
 4. V3arctic - the path to the google bucket directory containing a bed file with the primers used for amplicon sequencing
 
 The IlluminaPreprocessAssembly.wdl workflow will:
 
-1. Use seqclean to quality filter and trim raw fastq files
+1. Use Seqyclean to quality filter and trim raw fastq files
 2. Run FastQC on both the raw and cleaned reads
 3. Align reads to the reference genome using bwa and then sort the bam by coordinates using Samtools
 4. Use iVar trim to trim primer regions and then sort the trimmed bam by coordinates using Samtools
