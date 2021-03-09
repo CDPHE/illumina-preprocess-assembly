@@ -10,6 +10,7 @@ The columns for the input data table in Terra should be arranged as:
 1. entity:sample_id (column of sample names/ids). If there is more than one data table in the Terra Workspace, add a number after the word sample (e.g. entity:sample2_id).
 2. fastq_1 - This is the R1 fastq file.
 3. fastq_2 - This is the R2 fastq file.
+4. out_dir - google bucket path to where you would like the output files tranferred
 
 Also needed as input (these should be saved as Workspace data and included in Terra input field for the workflow): 
 1. covid_genome - the path to the google bucket directory containing the SARS-CoV-2 reference genome fasta
@@ -27,3 +28,5 @@ The IlluminaPreprocessAssembly.wdl workflow will:
 6. Use iVar consensus to call the consensus genome sequence from the trimmed and sorted bam
 7. Use Samtools flagstat, stats, and coverage to output statistics from the bam
 8. Assign the SARS-CoV-2 lineage using Pangolin
+9. Assign clades using Nextclade
+10. Transfer outputs your chosen google bucket

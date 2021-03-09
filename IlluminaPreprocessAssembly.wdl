@@ -10,6 +10,7 @@ workflow IlluminaPreprocessAssembly {
         File    adapters_and_contaminants
         File    covid_genome
         File    covid_gff
+        String    out_dir
     }
 
     call seqyclean {
@@ -73,6 +74,17 @@ workflow IlluminaPreprocessAssembly {
             sample_id = sample_id,
             fasta = ivar_consensus.consensus_out
     }
+    
+    call nextclade_one_sample {
+        input:
+             genome_fasta = ivar_consensus.consensus_out
+    }
+    
+    call transfer_outputs {
+        input:
+            out_dir = out_dir,
+            data = [seqyclean.cleaned_1, seqyclean.cleaned_2, seqyclean.seqyclean_summary, fastqc_raw.fastqc1_html, fastqc_raw.fastqc1_zip, fastqc_raw.fastqc2_html, fastqc_raw.fastqc2_zip, fastqc_cleaned.fastqc1_html, fastqc_cleaned.fastqc1_zip, fastqc_cleaned.fastqc2_html, fastqc_cleaned.fastqc2_zip, align_reads.out_bam, align_reads.out_bamindex, ivar_trim.trim_bam, ivar_trim.trimsort_bam, ivar_trim.trimsort_bamindex, ivar_var.var_out, ivar_consensus.consensus_out, bam_stats.flagstat_out, bam_stats.stats_out, bam_stats.covhist_out, bam_stats.cov_out, pangolin.lineage, nextclade_one_sample.nextclade_json, nextclade_one_sample.auspice_json, nextclade_one_sample.nextclade_csv]
+    }
 
     output {
         File filtered_reads_1 = seqyclean.cleaned_1
@@ -97,7 +109,13 @@ workflow IlluminaPreprocessAssembly {
         File stats_out = bam_stats.stats_out
         File covhist_out = bam_stats.covhist_out
         File cov_out = bam_stats.cov_out
+        String pangolin_version = pangolin.pangolin_version
         File pangolin_lineage = pangolin.lineage
+        String nextclade_version = nextclade_one_sample.nextclade_version
+        File nextclade_json = nextclade_one_sample.nextclade_json
+        File auspice_json = nextclade_one_sample.auspice_json
+        File nextclade_csv = nextclade_one_sample.nextclade_csv
+        String transfer_date = transfer_outputs.transfer_date
     }
 }
 
@@ -360,12 +378,14 @@ task pangolin {
 
     command {
 
+        pangolin --version > VERSION
         pangolin --outfile ${sample_id}_lineage_report.csv ${fasta}
 
     }
 
     output {
 
+        String pangolin_version = read_string("VERSION")
         File lineage = "${sample_id}_lineage_report.csv"
 
     }
@@ -378,5 +398,66 @@ task pangolin {
         preemptible:    0
         maxRetries:    0
         docker:    "staphb/pangolin"
+    }
+}
+
+task nextclade_one_sample {
+
+    input {
+        File genome_fasta
+    }
+    
+    String basename = basename(genome_fasta, ".fa")
+    
+    command {
+        nextclade --version > VERSION
+        nextclade --input-fasta "${genome_fasta}" --output-json "${basename}".nextclade.json --output-csv "${basename}".nextclade.csv --output-tree "${basename}".nextclade.auspice.json
+    }
+    
+    output {
+        String nextclade_version = read_string("VERSION")
+        File nextclade_json = "${basename}.nextclade.json"
+        File auspice_json = "${basename}.nextclade.auspice.json"
+        File nextclade_csv = "${basename}.nextclade.csv"
+    }
+    
+    runtime {
+        docker: "nextstrain/nextclade:0.13.0"
+        memory: "3 GB"
+        cpu: 2
+        disks: "local-disk 50 HDD"
+        dx_instance_type: "mem1_ssd1_v2_x2"
+    }
+}
+
+task transfer_outputs {
+    input {
+        String out_dir
+        Array[File] data
+    }
+    
+    String outdir = sub(out_dir, "/$", "")
+    
+    parameter_meta {
+        data: {
+            localization_optional: true
+        }
+    }
+
+    command <<<
+        gsutil -m cp ~{sep=' ' data} ~{outdir}
+        transferdate=`date`
+        echo $transferdate | tee TRANSFERDATE
+    >>>
+
+    output {
+        String transfer_date = read_string("TRANSFERDATE")
+    }
+
+    runtime {
+        docker: "theiagen/utility:1.0"
+        memory: "1 GB"
+        cpu: 1
+        disks: "local-disk 10 SSD"
     }
 }
